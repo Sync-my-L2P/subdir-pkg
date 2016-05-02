@@ -54,25 +54,40 @@ function varargout = subdir(varargin)
 % Get folder and filter
 %---------------------------
 
+% Check number of input and output arguments
 narginchk(0,1);
 nargoutchk(0,1);
 
 if nargin == 0
+    % List all files if no arguments are passed
     folder = pwd;
     filter = '*';
 else
+    % Parse given path to folder and filter
     [folder, name, ext] = fileparts(varargin{1});
+    
+    % Catch case in which no valid input is given
+    if isempty(folder) && isempty(name) && isempty(ext)
+        varargout{1} = [];
+        return
+    end
+    
+    % use pwd is no folder is given
     if isempty(folder)
         folder = pwd;
     end
+    
     if isempty(ext)
-        if isdir(fullfile(folder, name))
-            folder = fullfile(folder, name);
+        % if no ext is present, check if file is a folder
+        tmp = fullfile(folder, name);
+        if isdir(tmp)
+            folder = tmp;
             filter = '*';
         else
-            filter = [name ext];
+            filter = name;
         end
     else
+        % use name and extension as filter
         filter = [name ext];
     end
 end
@@ -81,11 +96,20 @@ end
 % Search all folders
 %---------------------------
 
+% Get all subfolders and separate them
 pathstr = genpath(folder);
-seplocs = findstr(pathstr, pathsep);
+seplocs = strfind(pathstr, pathsep);
+
+% Catch invalid path
+if isempty(seplocs)
+   varargout{1} = [];
+   return
+end
+
 loc1 = [1 seplocs(1:end-1)+1];
 loc2 = seplocs(1:end)-1;
 pathfolders = arrayfun(@(a,b) pathstr(a:b), loc1, loc2, 'UniformOutput', false);
+
 
 Files = [];
 for ifolder = 1:length(pathfolders)
@@ -95,6 +119,11 @@ for ifolder = 1:length(pathfolders)
         [NewFiles.name] = deal(fullnames{:});
         Files = [Files; NewFiles];
     end
+end
+
+if isempty(Files)
+    varargout{1} = [];
+    return
 end
 
 %---------------------------
